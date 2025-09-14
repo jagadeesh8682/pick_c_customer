@@ -1,73 +1,99 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme => ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6C63FF),
+      seedColor: AppColors.primaryYellow,
       brightness: Brightness.light,
     ),
-    scaffoldBackgroundColor: const Color(0xFFF7F7F9),
+    scaffoldBackgroundColor: AppColors.backgroundColor,
+    primaryColor: AppColors.primaryYellow,
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color.fromRGBO(250, 250, 253, 1),
+      backgroundColor: AppColors.darkBackground,
       elevation: 0,
       centerTitle: false,
-      titleSpacing: 16,
-      foregroundColor: Colors.black,
+      titleSpacing: AppDimensions.paddingMedium,
+      foregroundColor: AppColors.primaryYellow,
+      titleTextStyle: AppTextStyles.heading2,
     ),
 
-    cardColor: Colors.white,
+    cardColor: AppColors.cardBackground,
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.buttonPrimary,
+        foregroundColor: AppColors.textWhite,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDimensions.paddingMedium,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadiusMedium),
+        ),
+        minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+      ),
+    ),
+
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.info,
+        textStyle: AppTextStyles.linkText,
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color.fromRGBO(250, 250, 253, 1),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      fillColor: AppColors.inputBackground,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+        vertical: AppDimensions.paddingMedium,
+      ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadiusMedium),
+        borderSide: const BorderSide(color: AppColors.inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadiusMedium),
+        borderSide: const BorderSide(color: AppColors.inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 1.2),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadiusMedium),
+        borderSide: const BorderSide(
+          color: AppColors.inputFocusBorder,
+          width: 1.2,
+        ),
       ),
-      labelStyle: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadiusMedium),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      labelStyle: AppTextStyles.labelText,
+      hintStyle: AppTextStyles.hintText,
+      errorStyle: AppTextStyles.errorText,
     ),
 
     textTheme: const TextTheme(
-      headlineMedium: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.2,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.43,
-      ),
+      headlineLarge: AppTextStyles.heading1,
+      headlineMedium: AppTextStyles.heading2,
+      headlineSmall: AppTextStyles.heading3,
+      bodyLarge: AppTextStyles.bodyLarge,
+      bodyMedium: AppTextStyles.bodyMedium,
+      bodySmall: AppTextStyles.bodySmall,
+      labelLarge: AppTextStyles.buttonText,
     ),
   );
 
   static ThemeData get darkTheme => ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6C63FF),
+      seedColor: AppColors.primaryYellow,
       brightness: Brightness.dark,
     ),
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: AppColors.darkBackground,
+    primaryColor: AppColors.primaryYellow,
   );
 
   static ThemeData getTheme({Brightness brightness = Brightness.light}) {

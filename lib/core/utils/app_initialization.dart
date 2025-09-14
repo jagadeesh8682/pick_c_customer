@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
@@ -13,9 +12,6 @@ class AppInitialization {
 
     // Remove # from URL for cleaner URLs
     usePathUrlStrategy();
-
-    // Initialize Firebase
-    await Firebase.initializeApp();
 
     // Set up HTTP overrides for development
     HttpOverrides.global = MyHttpOverrides();

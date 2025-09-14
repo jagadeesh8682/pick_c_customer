@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'network_service.dart';
 
@@ -193,22 +192,8 @@ class NetworkServiceImpl implements NetworkService {
   }
 
   Future<Map<String, String>> _buildHeaders() async {
-    // TODO: Implement authentication token retrieval
-    // This is where you would get the auth token from your storage
-    final token = await _getAuthToken();
-
-    return {
-      "Content-Type": "application/json",
-      if (token != null) "Authorization": "Bearer $token",
-    };
-  }
-
-  Future<String?> _getAuthToken() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return await user.getIdToken(); // auto-refreshes if expired
-    }
-    return null;
+    // Simple headers without authentication tokens
+    return {"Content-Type": "application/json"};
   }
 
   dynamic _handleError(dynamic error) {

@@ -7,22 +7,20 @@ import '../../core/utils/navigation_service.dart';
 import '../../core/utils/custom_snackbar.dart';
 import '../../core/theme/app_colors.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _mobileController = TextEditingController();
-  final _passwordController = TextEditingController();
 
   @override
   void dispose() {
     _mobileController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -30,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-        title: 'Login',
+        title: 'Forgot Password',
         backgroundColor: AppColors.darkBackground,
         foregroundColor: AppColors.primaryYellow,
       ),
@@ -46,56 +44,36 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const Spacer(),
 
+                  // Header Text
+                  Text(
+                    'Enter your mobile number to receive OTP for password reset',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: AppDimensions.paddingXLarge),
+
                   // Mobile Number Field
                   CustomTextField(
-                    label: 'Enter mobile number',
+                    label: 'Mobile number',
                     hint: 'Enter your mobile number',
                     controller: _mobileController,
                     keyboardType: TextInputType.phone,
                     validator: _validateMobileNumber,
                   ),
 
-                  const SizedBox(height: AppDimensions.paddingLarge),
+                  const SizedBox(height: AppDimensions.paddingXLarge),
 
-                  // Password Field
-                  CustomTextField(
-                    label: 'Password',
-                    hint: 'Enter your password',
-                    controller: _passwordController,
-                    obscureText: true,
-                    validator: _validatePassword,
-                  ),
-
-                  const SizedBox(height: AppDimensions.paddingMedium),
-
-                  // Forgot Password and Help Links
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      CustomLinkButton(
-                        text: 'FORGOT PASSWORD ?',
-                        onPressed: _handleForgotPassword,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.paddingSmall),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      CustomLinkButton(text: 'HELP', onPressed: _handleHelp),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Login Button
+                  // Send OTP Button
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
                       return CustomButton(
-                        text: 'LOGIN',
-                        onPressed: authProvider.isLoading ? null : _handleLogin,
+                        text: 'SEND OTP',
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : _handleSendOTP,
                         isLoading: authProvider.isLoading,
                         backgroundColor: AppColors.darkBackground,
                         textColor: AppColors.primaryYellow,
@@ -105,24 +83,24 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: AppDimensions.paddingLarge),
 
-                  // Sign Up Link
+                  // Back to Login Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Don\'t have an account? ',
+                        'Remember your password? ',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
                       CustomLinkButton(
-                        text: 'Sign Up',
-                        onPressed: _handleSignUp,
+                        text: 'Login',
+                        onPressed: _handleBackToLogin,
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: AppDimensions.paddingLarge),
+                  const Spacer(),
                 ],
               ),
             ),
@@ -147,19 +125,7 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your password';
-    }
-
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-
-    return null;
-  }
-
-  void _handleLogin() async {
+  void _handleSendOTP() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -169,35 +135,31 @@ class _LoginPageState extends State<LoginPage> {
         '',
       );
 
-      final success = await authProvider.loginWithMobile(
+      final success = await authProvider.sendForgotPasswordOTP(
         mobileNumber: cleanMobileNumber,
-        password: _passwordController.text,
       );
 
       if (success && mounted) {
-        CustomSnackBar.showSuccess(context, 'Login successful!');
-        NavigationService.pushNamedAndRemoveUntil(
-          Routes.dashboard,
-          predicate: (route) => false,
+        CustomSnackBar.showSuccess(
+          context,
+          'OTP sent successfully to your mobile number!',
+        );
+
+        // Navigate to OTP verification screen
+        NavigationService.pushNamed(
+          Routes.otpVerification,
+          arguments: {'mobile': cleanMobileNumber, 'isForgotPassword': true},
         );
       } else if (mounted) {
         CustomSnackBar.showError(
           context,
-          authProvider.errorMessage ?? 'Login failed',
+          authProvider.errorMessage ?? 'Failed to send OTP',
         );
       }
     }
   }
 
-  void _handleForgotPassword() {
-    NavigationService.pushNamed(Routes.forgotPassword);
-  }
-
-  void _handleHelp() {
-    CustomSnackBar.showInfo(context, 'Help feature coming soon!');
-  }
-
-  void _handleSignUp() {
-    NavigationService.pushNamed(Routes.signUp);
+  void _handleBackToLogin() {
+    NavigationService.pop();
   }
 }

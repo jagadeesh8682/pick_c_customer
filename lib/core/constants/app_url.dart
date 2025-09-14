@@ -1,13 +1,18 @@
 class AppUrl {
-  static const String baseUrl = 'https://dev-api-gateway.storygenartist.com';
+  static const String baseUrl = 'http://api.pickcargo.in';
 
   // API endpoints
-  static const String userService = '$baseUrl/user-service';
-  static const String signup = '$userService/user/sign-up';
-  static const String signupValidation = '$baseUrl/user-service/user/validate';
-  static const String virifyGoogleToken =
-      '$baseUrl/user-service/user/create-user-from-session?sessionId=';
-  static const String login = '$userService/user/login';
-  static const String createNewProject =
-      "$baseUrl/spotlight-service/api/projects/create";
+
+  //login
+  static const String login = '$baseUrl/user-service/user/login';
+  //rigester
+  static const String register = '$baseUrl/user-service/user/sign-up';
+  //OTP validate
+  static const String oTPValidate = '$baseUrl/user-service/user/validate';
+  //forgot password
+  static const String forgotPassword = '$baseUrl/user-service/user/forgot-password';
+
+  //virifyGoogleToken
+
+ 
 }

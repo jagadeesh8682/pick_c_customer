@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../../core/utils/navigation_service.dart';
+import '../../core/routes/routes_name.dart';
+import '../../core/theme/app_colors.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -11,12 +13,14 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
+        backgroundColor: AppColors.darkBackground,
+        foregroundColor: AppColors.primaryYellow,
         actions: [
           IconButton(
             onPressed: () {
               Provider.of<AuthProvider>(context, listen: false).logout();
               NavigationService.pushNamedAndRemoveUntil(
-                '/login',
+                Routes.login,
                 predicate: (route) => false,
               );
             },
@@ -24,22 +28,29 @@ class DashboardPage extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.dashboard, size: 100, color: Colors.blue),
-            SizedBox(height: 20),
-            Text(
-              'Welcome to Dashboard!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'You are successfully logged in.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
+      body: Container(
+        color: AppColors.backgroundColor,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.dashboard, size: 100, color: AppColors.primaryYellow),
+              SizedBox(height: 20),
+              Text(
+                'Welcome to Dashboard!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'You are successfully logged in.',
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       ),
     );

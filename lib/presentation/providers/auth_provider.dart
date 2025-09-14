@@ -103,7 +103,8 @@ class AuthProvider extends ChangeNotifier {
       _setError(null);
 
       final response = await _authRepository.validateUser(
-        email: email,
+        mobileNumber:
+            email, // Using email as mobileNumber for legacy compatibility
         otp: otp,
       );
 
@@ -113,6 +114,153 @@ class AuthProvider extends ChangeNotifier {
         return true;
       } else {
         _setError(response['message'] ?? 'Validation failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Sign up with mobile number
+  Future<bool> signUpWithMobile({
+    required String name,
+    required String mobileNumber,
+    String? email,
+    required String password,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final response = await _authRepository.signUpWithMobile(
+        name: name,
+        mobileNumber: mobileNumber,
+        email: email,
+        password: password,
+      );
+
+      if (response['status'] == 'success') {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Sign up failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Login with mobile number
+  Future<bool> loginWithMobile({
+    required String mobileNumber,
+    required String password,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final response = await _authRepository.loginWithMobile(
+        mobileNumber: mobileNumber,
+        password: password,
+      );
+
+      if (response['status'] == 'success') {
+        _isAuthenticated = true;
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Login failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Send forgot password OTP
+  Future<bool> sendForgotPasswordOTP({required String mobileNumber}) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final response = await _authRepository.sendForgotPasswordOTP(
+        mobileNumber: mobileNumber,
+      );
+
+      if (response['status'] == 'success') {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Failed to send OTP');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Verify OTP
+  Future<bool> verifyOTP({
+    required String mobileNumber,
+    required String otp,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final response = await _authRepository.verifyOTP(
+        mobileNumber: mobileNumber,
+        otp: otp,
+      );
+
+      if (response['status'] == 'success') {
+        _isAuthenticated = true;
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'OTP verification failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Reset password
+  Future<bool> resetPassword({
+    required String mobileNumber,
+    required String newPassword,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final response = await _authRepository.resetPassword(
+        mobileNumber: mobileNumber,
+        newPassword: newPassword,
+      );
+
+      if (response['status'] == 'success') {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Password reset failed');
         _setLoading(false);
         return false;
       }
