@@ -14,7 +14,7 @@ class AuthRepository {
   }) async {
     try {
       final response = await _networkService.getPostApiResponseUnauthenticated(
-        AppUrl.register,
+        AppUrl.saveCustomerDetails,
         {'email': email, 'password': password, 'name': name},
       );
       return response;
@@ -44,7 +44,7 @@ class AuthRepository {
   }) async {
     try {
       final response = await _networkService.getPostApiResponseUnauthenticated(
-        AppUrl.oTPValidate,
+        AppUrl.verifyOtp,
         {'mobileNumber': mobileNumber, 'otp': otp},
       );
       return response;
@@ -61,7 +61,7 @@ class AuthRepository {
   }) async {
     try {
       final response = await _networkService
-          .getPostApiResponseUnauthenticated(AppUrl.register, {
+          .getPostApiResponseUnauthenticated(AppUrl.saveCustomerDetails, {
             'name': name,
             'mobileNumber': mobileNumber,
             if (email != null) 'email': email,
@@ -108,7 +108,7 @@ class AuthRepository {
   }) async {
     try {
       final response = await _networkService.getPostApiResponseUnauthenticated(
-        AppUrl.oTPValidate,
+        AppUrl.verifyOtp,
         {'mobileNumber': mobileNumber, 'otp': otp},
       );
       return response;

@@ -11,6 +11,8 @@ import '../../screens/booking_history_screen.dart';
 import '../../screens/rate_card_screen.dart';
 import '../../screens/webview_screen.dart';
 import '../../screens/emergency_contacts/emergency_contacts_screen.dart';
+import '../../screens/invoice/trip_invoice_screen.dart';
+import '../../screens/rating/driver_rating_screen.dart';
 import '../../providers/emergency_contacts/emergency_contacts_provider.dart';
 import '../../repos/emergency_contacts/emergency_contacts_repository.dart';
 import 'routes_name.dart';
@@ -43,6 +45,16 @@ class AppRoutes {
       return ResetPasswordPage(mobileNumber: args?['mobile'] ?? '');
     },
     Routes.map: (_) => const MapScreen(),
+    Routes.tripInvoice: (context) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return TripInvoiceScreen(bookingData: args ?? {});
+    },
+    Routes.driverRating: (context) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return DriverRatingScreen(bookingData: args ?? {});
+    },
 
     // Menu Screen Routes
     Routes.bookingHistory: (_) => const BookingHistoryScreen(),

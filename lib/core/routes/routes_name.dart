@@ -10,6 +10,8 @@ class Routes {
   // Main App Routes
   static const String map = '/map';
   static const String dashboard = '/dashboard';
+  static const String tripInvoice = '/trip-invoice';
+  static const String driverRating = '/driver-rating';
 
   // Menu Screen Routes
   static const String bookingHistory = '/booking-history';

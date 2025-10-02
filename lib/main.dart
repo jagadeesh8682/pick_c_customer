@@ -5,13 +5,28 @@ import 'core/providers/app_providers.dart';
 import 'core/routes/app_routes.dart';
 import 'core/routes/routes_name.dart';
 import 'core/theme/app_theme.dart';
-import 'core/utils/app_initialization.dart';
 import 'core/utils/navigation_service.dart';
+import 'core/services/razorpay_service.dart';
+import 'data/services/api_service.dart';
 import 'screens/map_screen.dart';
 
 void main() async {
-  await dotenv.load(fileName: ".env");
-  await AppInitialization.initializeAll();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize dotenv
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // If .env file doesn't exist, continue without it
+    print('Warning: .env file not found or could not be loaded: $e');
+  }
+
+  // Initialize API service
+  ApiService().initialize();
+
+  // Initialize Razorpay service
+  RazorpayService.initialize();
+
   runApp(const MyApp());
 }
 

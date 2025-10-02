@@ -5,6 +5,7 @@ import '../providers/map_provider.dart';
 import '../core/routes/routes_name.dart';
 import '../core/utils/navigation_service.dart';
 import '../core/constants/api_keys.dart';
+import 'booking/cargo_selection_screen.dart';
 
 /// Main Map Screen for truck booking
 class MapScreen extends StatefulWidget {
@@ -610,11 +611,8 @@ class _MapScreenState extends State<MapScreen> {
               child: GestureDetector(
                 onTap: mapProvider.isBooking
                     ? null
-                    : () async {
-                        final result = await mapProvider.bookNow();
-                        if (result != null) {
-                          _showBookingConfirmation(result);
-                        }
+                    : () {
+                        _showCargoSelectionDialog();
                       },
                 child: Container(
                   height: 60,
@@ -670,9 +668,18 @@ class _MapScreenState extends State<MapScreen> {
               'Estimated Arrival',
               bookingData['estimatedArrival'],
             ),
-            _buildBookingDetailRow('Driver', bookingData['driverName']),
-            _buildBookingDetailRow('Driver Phone', bookingData['driverPhone']),
-            _buildBookingDetailRow('Truck Number', bookingData['truckNumber']),
+            _buildBookingDetailRow(
+              'Driver',
+              bookingData['driverName'] ?? 'N/A',
+            ),
+            _buildBookingDetailRow(
+              'Driver Phone',
+              bookingData['driverPhone'] ?? 'N/A',
+            ),
+            _buildBookingDetailRow(
+              'Truck Number',
+              bookingData['truckNumber'] ?? 'N/A',
+            ),
           ],
         ),
         actions: [
@@ -890,5 +897,16 @@ class _MapScreenState extends State<MapScreen> {
         );
       }
     }
+  }
+
+  void _showCargoSelectionDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const CargoSelectionDialog();
+      },
+    );
+    // Dialog will handle navigation to payment screen
   }
 }
