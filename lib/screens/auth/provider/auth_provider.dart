@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../repo/auth_models.dart';
 import '../../../core/data/services/api_service.dart';
@@ -10,14 +11,12 @@ class AuthProvider with ChangeNotifier {
   bool _isLoggedIn = false;
   String? _errorMessage;
   Customer? _currentUser;
-  String? _authToken;
 
   // Getters
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _isLoggedIn;
   String? get errorMessage => _errorMessage;
   Customer? get currentUser => _currentUser;
-  String? get authToken => _authToken;
 
   AuthProvider() {
     _initializeAuth();
@@ -26,15 +25,11 @@ class AuthProvider with ChangeNotifier {
   Future<void> _initializeAuth() async {
     _setLoading(true);
     try {
-      final token = await _apiService.getAuthToken();
-      if (token != null) {
-        _authToken = token;
+      // Get mobile number from stored credentials
+      final mobile = await CredentialManager.getMobileNumber();
+      if (mobile != null) {
         _isLoggedIn = true;
-        // Get mobile number from stored credentials
-        final mobile = await CredentialManager.getMobileNumber();
-        if (mobile != null) {
-          _currentUser = await _apiService.getUserDetails(mobile);
-        }
+        _currentUser = await _apiService.getUserDetails(mobile);
       }
     } catch (e) {
       debugPrint('Failed to load user details: $e');
@@ -53,25 +48,18 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      final token = await _apiService.login(credentials);
+     final response = await _apiService.login(credentials);
+response['Status'] == true ? _isLoggedIn = true : 
+      _isLoggedIn = false;
 
-      if (token.accessToken.isNotEmpty) {
-        _authToken = token.accessToken;
-        _isLoggedIn = true;
+      // // Save credentials
+      await CredentialManager.saveCredentials(mobileNumber, password, response['Token']);
 
-        // Save token and credentials
-        await _apiService.setAuthToken(token.accessToken);
-        await CredentialManager.saveCredentials(mobileNumber, password);
+      // // Load user details
+      // _currentUser = await _apiService.getUserDetails(mobileNumber);
 
-        // Load user details
-        _currentUser = await _apiService.getUserDetails(mobileNumber);
-
-        notifyListeners();
-        return true;
-      } else {
-        _setError('Invalid credentials');
-        return false;
-      }
+      notifyListeners();
+      return true;
     } catch (e) {
       _setError('Login failed: $e');
       return false;
@@ -270,7 +258,6 @@ class AuthProvider with ChangeNotifier {
 
   void _clearAuthState() {
     _isLoggedIn = false;
-    _authToken = null;
     _currentUser = null;
     _clearError();
     notifyListeners();

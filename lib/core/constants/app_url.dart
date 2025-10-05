@@ -1,9 +1,9 @@
 class AppUrl {
-  static const String baseUrl = 'http://api.pickcargo.in/api/';
+  static const String baseUrl = 'http://api.pickcargo.in/api';
   static const String webApiAddress = 'http://api.pickcargo.in/';
 
   // Authentication
-  static const String login = 'master/customer/login';
+  static const String login = '/master/customer/login';
   static const String logout = 'master/customer/logout';
   static const String userDetails = 'master/customer/{mobile}';
   static const String saveCustomerDetails = 'master/customer/save';

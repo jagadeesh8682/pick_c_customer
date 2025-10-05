@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../screens/auth/repo/auth_models.dart';
@@ -9,7 +11,6 @@ class ApiService {
   ApiService._internal();
 
   late Dio _dio;
-  String? _authToken;
 
   void _ensureInitialized() {
     try {
@@ -35,51 +36,25 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          if (_authToken != null) {
-            options.headers['Authorization'] = 'Bearer $_authToken';
-          }
           handler.next(options);
         },
         onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
-            _clearAuthToken();
-          }
           handler.next(error);
         },
       ),
     );
   }
 
-  Future<void> setAuthToken(String token) async {
-    _ensureInitialized();
-    _authToken = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
-  }
-
-  Future<String?> getAuthToken() async {
-    _ensureInitialized();
-    final prefs = await SharedPreferences.getInstance();
-    _authToken = prefs.getString('auth_token');
-    return _authToken;
-  }
-
-  void _clearAuthToken() {
-    _authToken = null;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove('auth_token');
-    });
-  }
-
   // Authentication APIs
-  Future<Token> login(LoginCredentials credentials) async {
+  Future<Map<String, dynamic>> login(LoginCredentials credentials) async {
     _ensureInitialized();
     try {
       final response = await _dio.post(
         AppUrl.login,
         data: credentials.toJson(),
       );
-      return Token.fromJson(response.data);
+      log('response---->$response');
+      return response.data;
     } catch (e) {
       throw _handleError(e);
     }
@@ -89,10 +64,8 @@ class ApiService {
     _ensureInitialized();
     try {
       await _dio.post(AppUrl.logout);
-      _clearAuthToken();
       return true;
     } catch (e) {
-      _clearAuthToken();
       return true; // Always logout locally even if server fails
     }
   }

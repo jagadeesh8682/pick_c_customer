@@ -159,38 +159,38 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  void _handleLogin() {
-    NavigationService.pushNamedAndRemoveUntil(
-      Routes.map,
-      predicate: (route) => false,
-    );
-    // if (_formKey.currentState!.validate()) {
-    //   final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  void _handleLogin() async {
+    // NavigationService.pushNamedAndRemoveUntil(
+    //   Routes.map,
+    //   predicate: (route) => false,
+    // );
+    if (_formKey.currentState!.validate()) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    //   // Clean mobile number (remove any non-digit characters)
-    //   final cleanMobileNumber = _mobileController.text.replaceAll(
-    //     RegExp(r'[^\d]'),
-    //     '',
-    //   );
+      // Clean mobile number (remove any non-digit characters)
+      final cleanMobileNumber = _mobileController.text.replaceAll(
+        RegExp(r'[^\d]'),
+        '',
+      );
 
-    //   final success = await authProvider.loginWithMobile(
-    //     mobileNumber: cleanMobileNumber,
-    //     password: _passwordController.text,
-    //   );
+      final success = await authProvider.login(
+        cleanMobileNumber,
+        _passwordController.text,
+      );
 
-    //   if (success && mounted) {
-    //     CustomSnackBar.showSuccess(context, 'Login successful!');
-    //     NavigationService.pushNamedAndRemoveUntil(
-    //       Routes.dashboard,
-    //       predicate: (route) => false,
-    //     );
-    //   } else if (mounted) {
-    //     CustomSnackBar.showError(
-    //       context,
-    //       authProvider.errorMessage ?? 'Login failed',
-    //     );
-    //   }
-    // }
+      if (success && mounted) {
+        CustomSnackBar.showSuccess(context, 'Login successful!');
+        NavigationService.pushNamedAndRemoveUntil(
+          Routes.map,
+          predicate: (route) => false,
+        );
+      } else if (mounted) {
+        CustomSnackBar.showError(
+          context,
+          authProvider.errorMessage ?? 'Login failed',
+        );
+      }
+    }
   }
 
   void _handleForgotPassword() {

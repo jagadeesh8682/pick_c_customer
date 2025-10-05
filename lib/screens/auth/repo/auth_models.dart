@@ -17,27 +17,17 @@ class LoginCredentials {
 }
 
 class Token {
-  final String accessToken;
   final String tokenType;
   final int expiresIn;
 
-  Token({
-    required this.accessToken,
-    required this.tokenType,
-    required this.expiresIn,
-  });
+  Token({required this.tokenType, required this.expiresIn});
 
   Map<String, dynamic> toJson() {
-    return {
-      'accessToken': accessToken,
-      'tokenType': tokenType,
-      'expiresIn': expiresIn,
-    };
+    return {'tokenType': tokenType, 'expiresIn': expiresIn};
   }
 
   factory Token.fromJson(Map<String, dynamic> json) {
     return Token(
-      accessToken: json['accessToken'] ?? json['access_token'] ?? '',
       tokenType: json['tokenType'] ?? json['token_type'] ?? 'Bearer',
       expiresIn: json['expiresIn'] ?? json['expires_in'] ?? 3600,
     );
