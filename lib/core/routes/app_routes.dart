@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../presentation/pages/signup_page.dart';
-import '../../presentation/pages/login_page.dart';
-import '../../presentation/pages/dashboard_page.dart';
-import '../../presentation/pages/forgot_password_page.dart';
-import '../../presentation/pages/otp_verification_page.dart';
-import '../../presentation/pages/reset_password_page.dart';
-import '../../screens/map_screen.dart';
-import '../../screens/booking_history_screen.dart';
-import '../../screens/rate_card_screen.dart';
-import '../../screens/webview_screen.dart';
-import '../../screens/emergency_contacts/emergency_contacts_screen.dart';
-import '../../screens/invoice/trip_invoice_screen.dart';
-import '../../screens/rating/driver_rating_screen.dart';
-import '../../providers/emergency_contacts/emergency_contacts_provider.dart';
-import '../../repos/emergency_contacts/emergency_contacts_repository.dart';
+import '../../screens/auth/screen/signup_page.dart';
+import '../../screens/auth/screen/login_page.dart';
+import '../../screens/auth/screen/dashboard_page.dart';
+import '../../screens/auth/screen/forgot_password_page.dart';
+import '../../screens/auth/screen/otp_verification_page.dart';
+import '../../screens/auth/screen/reset_password_page.dart';
+import '../../screens/map/screen/map_screen.dart';
+import '../../screens/booking_history/screen/booking_history_screen.dart';
+import '../../screens/rate_card/screen/rate_card_screen.dart';
+import '../../screens/help/screen/webview_screen.dart';
+import '../../screens/emergency_contacts/screen/emergency_contacts_screen.dart';
+import '../../screens/invoice/screen/trip_invoice_screen.dart';
+import '../../screens/rating/screen/driver_rating_screen.dart';
+import '../../screens/emergency_contacts/provider/emergency_contacts_provider.dart';
+import '../../screens/emergency_contacts/repo/emergency_contacts_repository.dart';
 import 'routes_name.dart';
 
 class AppRoutes {

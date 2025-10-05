@@ -5,6 +5,29 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Load environment variables from .env file
+fun loadEnvFile(): Map<String, String> {
+    val envFile = file("../../.env")  // Fixed path to .env file
+    val env = mutableMapOf<String, String>()
+    
+    if (envFile.exists()) {
+        println("Found .env file at: ${envFile.absolutePath}")
+        envFile.readLines().forEach { line ->
+            if (line.isNotBlank() && !line.startsWith("#")) {
+                val parts = line.split("=", limit = 2)
+                if (parts.size == 2) {
+                    env[parts[0].trim()] = parts[1].trim()
+                }
+            }
+        }
+    } else {
+        println("❌ .env file not found at: ${envFile.absolutePath}")
+    }
+    return env
+}
+
+val envVars = loadEnvFile()
+
 android {
     namespace = "com.example.pick_c_customer"
     compileSdk = flutter.compileSdkVersion
@@ -29,9 +52,12 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // Load API key from environment variables
-        val googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
+        // Load API key from .env file
+        val googleMapsApiKey = envVars["GOOGLE_MAPS_API_KEY"] ?: ""
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
+        
+        // Debug: Print API key status
+        println("Google Maps API Key loaded: ${if (googleMapsApiKey.isNotEmpty()) "✅ Yes (${googleMapsApiKey.take(10)}...)" else "❌ No"}")
     }
 
     buildTypes {

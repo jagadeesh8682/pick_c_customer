@@ -7,8 +7,8 @@ import 'core/routes/routes_name.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/navigation_service.dart';
 import 'core/services/razorpay_service.dart';
-import 'data/services/api_service.dart';
-import 'screens/map_screen.dart';
+import 'core/data/services/api_service.dart';
+import 'screens/map/screen/map_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
