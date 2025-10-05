@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
 import '../repo/auth_models.dart';
 import 'custom_widgets.dart';
-import '../../../core/routes/routes_name.dart';
 import '../../../core/utils/navigation_service.dart';
 import '../../../core/utils/custom_snackbar.dart';
+import '../../../core/utils/device_utils.dart';
 import '../../../core/theme/app_colors.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -231,34 +231,44 @@ class _SignUpPageState extends State<SignUpPage> {
         '',
       );
 
-      final signUpRequest = SignUpRequest(
-        name: _nameController.text.trim(),
-        mobileNo: cleanMobileNumber,
-        email: _emailController.text.trim().isEmpty
-            ? ''
-            : _emailController.text.trim(),
-        password: _passwordController.text,
-        address: '', // Add empty address as it's required
-      );
+      try {
+        // Get device ID
+        final deviceId = await DeviceUtils.getDeviceId();
 
-      final success = await authProvider.signUp(signUpRequest);
-
-      if (success && mounted) {
-        CustomSnackBar.showSuccess(
-          context,
-          'Registration successful! OTP sent to your mobile number.',
+        final signUpRequest = SignUpRequest(
+          mobileNo: cleanMobileNumber,
+          password: _passwordController.text,
+          name: _nameController.text.trim(),
+          emailID: _emailController.text.trim().isEmpty
+              ? ''
+              : _emailController.text.trim(),
+          deviceID: deviceId,
+          createdOn: DateTime.now(),
         );
 
-        // Navigate to OTP verification screen
-        NavigationService.pushNamed(
-          Routes.checkEmail,
-          arguments: {'mobile': cleanMobileNumber},
-        );
-      } else if (mounted) {
-        CustomSnackBar.showError(
-          context,
-          authProvider.errorMessage ?? 'Registration failed',
-        );
+        final success = await authProvider.signUp(signUpRequest);
+
+        if (success && mounted) {
+          CustomSnackBar.showSuccess(
+            context,
+            'Registration successful! You can now login.',
+          );
+
+          // Navigate back to login screen
+          NavigationService.pop();
+        } else if (mounted) {
+          CustomSnackBar.showError(
+            context,
+            authProvider.errorMessage ?? 'Registration failed',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          CustomSnackBar.showError(
+            context,
+            'Failed to get device information: $e',
+          );
+        }
       }
     }
   }

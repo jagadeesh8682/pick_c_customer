@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'network_service.dart';
 
 class NetworkServiceImpl implements NetworkService {
@@ -192,8 +193,30 @@ class NetworkServiceImpl implements NetworkService {
   }
 
   Future<Map<String, String>> _buildHeaders() async {
-    // Simple headers without authentication tokens
-    return {"Content-Type": "application/json"};
+    final headers = <String, String>{
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    };
+
+    try {
+      // Get authentication token from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Get mobile number for additional authentication if needed
+      final mobile = prefs.getString('mobile_number');
+      if (mobile != null && mobile.isNotEmpty) {
+        headers['X-Mobile-Number'] = mobile;
+      }
+    } catch (e) {
+      log('Error building headers: $e');
+    }
+
+    return headers;
   }
 
   dynamic _handleError(dynamic error) {

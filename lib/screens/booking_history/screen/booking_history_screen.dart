@@ -1,15 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../provider/booking_history_provider.dart';
 
 /// Booking History Screen showing past truck bookings
-class BookingHistoryScreen extends StatelessWidget {
+class BookingHistoryScreen extends StatefulWidget {
   const BookingHistoryScreen({super.key});
+
+  @override
+  State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
+}
+
+class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load booking history when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingHistoryProvider>().loadBookingHistory();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: _buildAppBar(),
-      body: _buildBookingList(),
+      body: Consumer<BookingHistoryProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (provider.error != null) {
+            return _buildErrorState(provider);
+          }
+
+          if (!provider.hasBookings) {
+            return _buildEmptyState();
+          }
+
+          return _buildBookingList(provider);
+        },
+      ),
     );
   }
 
@@ -20,9 +52,7 @@ class BookingHistoryScreen extends StatelessWidget {
       foregroundColor: Colors.yellow,
       elevation: 0,
       leading: IconButton(
-        onPressed: () {
-          // Navigate back
-        },
+        onPressed: () => Navigator.pop(context),
         icon: const Icon(Icons.arrow_back, color: Colors.yellow),
       ),
       title: const Text(
@@ -34,74 +64,159 @@ class BookingHistoryScreen extends StatelessWidget {
         ),
       ),
       centerTitle: true,
-    );
-  }
-
-  /// Build scrollable list of booking entries
-  Widget _buildBookingList() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildBookingCard(
-          date: 'Mon, Jun 02, 2025 10:13 AM',
-          cost: '₹ 556.0',
-          pickupLocation: 'F959+48 Kondapur, Telangana, India',
-          dropLocation:
-              'Lemon Tree (Hitec City), Phase 2, HITEC City, Hyderabad, Telangana',
-          bookingId: 'BK250600002',
-          rating: 4,
-          truckSpecs: '700kgs - Mini - Open Truck',
-        ),
-        const SizedBox(height: 12),
-        _buildBookingCard(
-          date: 'Wed, Mar 19, 2025 10:14 AM',
-          cost: '₹ 10786.0',
-          pickupLocation:
-              'Krishe Emerald, Krishe Emerald, Laxmi Cyber City, Whitefields, Kondapur,',
-          dropLocation:
-              'Kondapur, opposite Harsha Toyota, Land Mark Residency, Kondapur,',
-          bookingId: 'BK250300004',
-          rating: 4,
-          truckSpecs: '700kgs - Mini - Open Truck',
-        ),
-        const SizedBox(height: 12),
-        _buildBookingCard(
-          date: 'Wed, Jan 22, 2025 23:34 PM',
-          cost: '₹ 377.0',
-          pickupLocation:
-              'No: 8, Raja Rajeswari nagar, behind 8th Betalion, Raghavendra Colony,',
-          dropLocation:
-              'Mikkilineni Residency, 440, Park Avenue Colony, Raja Rajeshwara Nagar,',
-          bookingId: 'BK250100005',
-          rating: 4,
-          truckSpecs: '700kgs - Mini - Open Truck',
-        ),
-        const SizedBox(height: 12),
-        _buildBookingCard(
-          date: 'Thu, Dec 19, 2024 22:17 PM',
-          cost: '₹ 0.0',
-          pickupLocation:
-              'No: 8, Raja Rajeswari nagar, behind 8th Betalion, Raghavendra Colony,',
-          dropLocation:
-              '1422, near Tata Motors, Park Avenue Colony, Raja Rajeshwara Nagar,',
-          bookingId: 'BK241200008',
-          rating: 4,
-          truckSpecs: '700kgs - Mini - Open Truck',
+      actions: [
+        IconButton(
+          onPressed: () {
+            context.read<BookingHistoryProvider>().refresh();
+          },
+          icon: const Icon(Icons.refresh, color: Colors.yellow),
         ),
       ],
     );
   }
 
+  /// Build scrollable list of booking entries
+  Widget _buildBookingList(BookingHistoryProvider provider) {
+    return RefreshIndicator(
+      onRefresh: () => provider.refresh(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: provider.bookingHistory.length,
+        itemBuilder: (context, index) {
+          final booking = provider.bookingHistory[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildBookingCard(
+              booking: booking,
+              onCancel:
+                  booking['status'] == 'in_progress' ||
+                      booking['status'] == 'pending'
+                  ? () => _showCancelDialog(
+                      context,
+                      provider,
+                      booking['bookingId'],
+                    )
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(BookingHistoryProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              provider.error ?? 'An error occurred',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => provider.loadBookingHistory(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build empty state
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_shipping_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No booking history found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your past truck bookings will appear here',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show cancel booking dialog
+  void _showCancelDialog(
+    BuildContext context,
+    BookingHistoryProvider provider,
+    String bookingId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Booking'),
+        content: const Text('Are you sure you want to cancel this booking?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await provider.cancelBooking(bookingId);
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Booking cancelled successfully'),
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to cancel booking')),
+                );
+              }
+            },
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Build individual booking card
   Widget _buildBookingCard({
-    required String date,
-    required String cost,
-    required String pickupLocation,
-    required String dropLocation,
-    required String bookingId,
-    required int rating,
-    required String truckSpecs,
+    required Map<String, dynamic> booking,
+    VoidCallback? onCancel,
   }) {
+    final date = _formatDate(booking['bookingTime'] ?? '');
+    final cost = '₹ ${booking['fare']?.toString() ?? '0.0'}';
+    final pickupLocation = booking['pickupLocation'] ?? 'Unknown location';
+    final dropLocation = booking['dropLocation'] ?? 'Unknown location';
+    final bookingId = booking['bookingId'] ?? 'Unknown ID';
+    final rating = booking['rating'] ?? 0;
+    final truckSpecs =
+        '${booking['truckType'] ?? 'Unknown'} - ${booking['truckNumber'] ?? 'N/A'}';
+    final status = booking['status'] ?? 'unknown';
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -116,7 +231,7 @@ class BookingHistoryScreen extends StatelessWidget {
       child: Column(
         children: [
           // Header with dark background
-          _buildBookingHeader(date, cost),
+          _buildBookingHeader(date, cost, status),
           // Content with light grey background
           _buildBookingContent(
             pickupLocation,
@@ -124,6 +239,7 @@ class BookingHistoryScreen extends StatelessWidget {
             bookingId,
             rating,
             truckSpecs,
+            onCancel,
           ),
         ],
       ),
@@ -131,7 +247,7 @@ class BookingHistoryScreen extends StatelessWidget {
   }
 
   /// Build booking header with dark background
-  Widget _buildBookingHeader(String date, String cost) {
+  Widget _buildBookingHeader(String date, String cost, String status) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -183,16 +299,16 @@ class BookingHistoryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Paid status
+          // Status badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: _getStatusColor(status),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              'PAID',
-              style: TextStyle(
+            child: Text(
+              status.toUpperCase(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -211,6 +327,7 @@ class BookingHistoryScreen extends StatelessWidget {
     String bookingId,
     int rating,
     String truckSpecs,
+    VoidCallback? onCancel,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -294,6 +411,21 @@ class BookingHistoryScreen extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+          // Cancel button if applicable
+          if (onCancel != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onCancel,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Cancel Booking'),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -320,5 +452,57 @@ class BookingHistoryScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Get status color based on booking status
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'in_progress':
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Format date string
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Today, ${_formatTime(date)}';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday, ${_formatTime(date)}';
+      } else if (difference.inDays < 7) {
+        return '${_getWeekdayName(date.weekday)}, ${_formatTime(date)}';
+      } else {
+        return '${date.day}/${date.month}/${date.year}, ${_formatTime(date)}';
+      }
+    } catch (e) {
+      return 'Unknown date';
+    }
+  }
+
+  /// Format time
+  String _formatTime(DateTime date) {
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    final displayHour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
+    return '$displayHour:$minute $period';
+  }
+
+  /// Get weekday name
+  String _getWeekdayName(int weekday) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return weekdays[weekday - 1];
   }
 }

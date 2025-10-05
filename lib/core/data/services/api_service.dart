@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../screens/auth/repo/auth_models.dart';
 import '../../constants/app_url.dart';
 
@@ -70,15 +69,28 @@ class ApiService {
     }
   }
 
-  Future<Customer> signUp(SignUpRequest request) async {
+  Future<Map<String, dynamic>> signUp(SignUpRequest request) async {
     _ensureInitialized();
     try {
-      final response = await _dio.post(
-        AppUrl.saveCustomerDetails,
-        data: request.toJson(),
-      );
-      return Customer.fromJson(response.data);
+      final url = '${AppUrl.baseUrl}/${AppUrl.saveCustomerDetails}';
+      log('SignUp request URL: $url');
+      log('SignUp request data: ${request.toJson()}');
+
+      final response = await _dio.post(url, data: request.toJson());
+      log('SignUp response: ${response.data}');
+      log('SignUp response type: ${response.data.runtimeType}');
+
+      // Handle both boolean and Map responses
+      if (response.data is bool) {
+        return {'success': response.data};
+      } else if (response.data is Map<String, dynamic>) {
+        return response.data;
+      } else {
+        // Convert other types to Map
+        return {'success': true, 'data': response.data};
+      }
     } catch (e) {
+      log('SignUp error: $e');
       throw _handleError(e);
     }
   }
@@ -110,21 +122,6 @@ class ApiService {
     try {
       final response = await _dio.get(
         AppUrl.replacePathParams(AppUrl.isNewNumber, {'mobile': mobile}),
-      );
-      return response.data ?? false;
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<bool> verifyOTP(String mobile, String otp) async {
-    _ensureInitialized();
-    try {
-      final response = await _dio.get(
-        AppUrl.replacePathParams(AppUrl.verifyOtp, {
-          'mobile': mobile,
-          'otp': otp,
-        }),
       );
       return response.data ?? false;
     } catch (e) {

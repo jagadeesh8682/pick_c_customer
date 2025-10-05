@@ -15,6 +15,8 @@ import '../../screens/invoice/screen/trip_invoice_screen.dart';
 import '../../screens/rating/screen/driver_rating_screen.dart';
 import '../../screens/emergency_contacts/provider/emergency_contacts_provider.dart';
 import '../../screens/emergency_contacts/repo/emergency_contacts_repository.dart';
+import '../../screens/booking_history/provider/booking_history_provider.dart';
+import '../../screens/booking_history/repo/booking_history_repository.dart';
 import 'routes_name.dart';
 
 class AppRoutes {
@@ -57,7 +59,11 @@ class AppRoutes {
     },
 
     // Menu Screen Routes
-    Routes.bookingHistory: (_) => const BookingHistoryScreen(),
+    Routes.bookingHistory: (_) => ChangeNotifierProvider(
+      create: (context) =>
+          BookingHistoryProvider(repository: BookingHistoryRepository()),
+      child: const BookingHistoryScreen(),
+    ),
     Routes.rateCard: (_) => const RateCardScreen(),
     Routes.emergencyContacts: (_) => ChangeNotifierProvider(
       create: (context) =>

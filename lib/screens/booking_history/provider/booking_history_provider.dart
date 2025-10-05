@@ -27,9 +27,23 @@ class BookingHistoryProvider extends ChangeNotifier {
     try {
       final history = await _repository.getBookingHistory();
       _bookingHistory = history;
+
+      // Log success for debugging
+      print('Successfully loaded ${history.length} booking records');
     } catch (e) {
       _error = e.toString();
       print('Error loading booking history: $e');
+
+      // Show user-friendly error message
+      if (e.toString().contains('mobile number not found')) {
+        _error = 'Please login again to view your booking history';
+      } else if (e.toString().contains('Unauthorized')) {
+        _error = 'Session expired. Please login again';
+      } else if (e.toString().contains('Network error')) {
+        _error = 'Network error. Please check your internet connection';
+      } else {
+        _error = 'Failed to load booking history. Please try again';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -49,10 +63,15 @@ class BookingHistoryProvider extends ChangeNotifier {
           _bookingHistory[index]['status'] = 'cancelled';
           notifyListeners();
         }
+        print('Successfully cancelled booking: $bookingId');
+      } else {
+        print('Failed to cancel booking: $bookingId');
       }
       return success;
     } catch (e) {
       print('Error cancelling booking: $e');
+      _error = 'Failed to cancel booking. Please try again';
+      notifyListeners();
       return false;
     }
   }
@@ -97,5 +116,31 @@ class BookingHistoryProvider extends ChangeNotifier {
     return _bookingHistory
         .where((booking) => booking['status'] == 'completed')
         .fold(0.0, (sum, booking) => sum + (booking['fare'] as double));
+  }
+
+  /// Clear error message
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
+  /// Check if there are any bookings
+  bool get hasBookings => _bookingHistory.isNotEmpty;
+
+  /// Get bookings by date range
+  List<Map<String, dynamic>> getBookingsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _bookingHistory.where((booking) {
+      final bookingDate = DateTime.parse(booking['bookingTime']);
+      return bookingDate.isAfter(startDate) && bookingDate.isBefore(endDate);
+    }).toList();
+  }
+
+  /// Get recent bookings (last 30 days)
+  List<Map<String, dynamic>> get recentBookings {
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    return getBookingsByDateRange(thirtyDaysAgo, DateTime.now());
   }
 }

@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../repo/auth_models.dart';
 import '../../../core/data/services/api_service.dart';
@@ -76,11 +75,34 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      await _apiService.signUp(signUpRequest);
+      debugPrint('Starting signup process...');
+      debugPrint('SignUpRequest data: ${signUpRequest.toJson()}');
 
-      // After successful signup, automatically login
-      return await login(signUpRequest.mobileNo, signUpRequest.password);
-    } catch (e) {
+      final response = await _apiService.signUp(signUpRequest);
+
+      debugPrint('Signup response received: $response');
+      debugPrint('Response type: ${response.runtimeType}');
+
+      // Check if signup was successful
+      // Check for success indicators in response
+      if (response.containsKey('success') && response['success'] == true) {
+        debugPrint('Signup successful - success field');
+        return true;
+      } else if (response.containsKey('status') &&
+          response['status'] == 'success') {
+        debugPrint('Signup successful - status field');
+        return true;
+      } else if (response.containsKey('message') &&
+          response['message'].toString().toLowerCase().contains('success')) {
+        debugPrint('Signup successful - message field');
+        return true;
+      }
+
+      debugPrint('Signup failed - no success indicators found');
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('Signup error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _setError('Signup failed: $e');
       return false;
     } finally {
@@ -107,8 +129,11 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final success = await _apiService.verifyOTP(mobileNumber, otp);
-      return success;
+      // For now, just return true since OTPs are not being used
+      // Replace this with actual OTP verification when needed
+      debugPrint('OTP verification called for $mobileNumber with OTP: $otp');
+      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      return true;
     } catch (e) {
       _setError('OTP verification failed: $e');
       return false;

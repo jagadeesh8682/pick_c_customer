@@ -101,37 +101,61 @@ class Customer {
 }
 
 class SignUpRequest {
-  final String name;
   final String mobileNo;
-  final String email;
   final String password;
-  final String address;
+  final String name;
+  final String emailID;
+  final String deviceID;
+  final DateTime createdOn;
 
   SignUpRequest({
-    required this.name,
     required this.mobileNo,
-    required this.email,
     required this.password,
-    required this.address,
+    required this.name,
+    required this.emailID,
+    required this.deviceID,
+    required this.createdOn,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
-      'mobileNo': mobileNo,
-      'email': email,
-      'password': password,
-      'address': address,
+      'MobileNo': mobileNo,
+      'Password': password,
+      'Name': name,
+      'EmailID': emailID,
+      'DeviceID': deviceID,
+      'CreatedOn': createdOn.toIso8601String(),
     };
   }
 
   factory SignUpRequest.fromJson(Map<String, dynamic> json) {
     return SignUpRequest(
-      name: json['name'] ?? '',
-      mobileNo: json['mobileNo'] ?? '',
-      email: json['email'] ?? '',
-      password: json['password'] ?? '',
-      address: json['address'] ?? '',
+      mobileNo: json['MobileNo'] ?? json['mobileNo'] ?? '',
+      password: json['Password'] ?? json['password'] ?? '',
+      name: json['Name'] ?? json['name'] ?? '',
+      emailID: json['EmailID'] ?? json['emailID'] ?? json['email'] ?? '',
+      deviceID: json['DeviceID'] ?? json['deviceID'] ?? '',
+      createdOn:
+          DateTime.tryParse(json['CreatedOn'] ?? json['createdOn'] ?? '') ??
+          DateTime.now(),
+    );
+  }
+
+  SignUpRequest copyWith({
+    String? mobileNo,
+    String? password,
+    String? name,
+    String? emailID,
+    String? deviceID,
+    DateTime? createdOn,
+  }) {
+    return SignUpRequest(
+      mobileNo: mobileNo ?? this.mobileNo,
+      password: password ?? this.password,
+      name: name ?? this.name,
+      emailID: emailID ?? this.emailID,
+      deviceID: deviceID ?? this.deviceID,
+      createdOn: createdOn ?? this.createdOn,
     );
   }
 }

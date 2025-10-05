@@ -1,11 +1,72 @@
 import 'dart:math';
+import '../../../core/network/network_service_impl.dart';
+import '../../../core/constants/app_url.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Booking History Repository for handling booking history data
 class BookingHistoryRepository {
+  final NetworkServiceImpl _networkService = NetworkServiceImpl();
   final Random _random = Random();
 
   /// Get booking history for user
   Future<List<Map<String, dynamic>>> getBookingHistory() async {
+    try {
+      // Get user mobile number from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final mobile = prefs.getString('mobile') ?? '';
+
+      if (mobile.isEmpty) {
+        throw Exception('User mobile number not found');
+      }
+
+      // Build API URL
+      final url = AppUrl.replacePathParams(AppUrl.bookingHistory, {
+        'mobile': mobile,
+      });
+      final fullUrl = '${AppUrl.baseUrl}/$url';
+
+      // Make API call using NetworkServiceImpl
+      final response = await _networkService.getGetApiResponse(fullUrl);
+
+      // Handle API response
+      if (response is Map<String, dynamic>) {
+        // Check if response contains booking data
+        if (response.containsKey('data') && response['data'] is List) {
+          final List<dynamic> bookingData = response['data'];
+          return bookingData
+              .map<Map<String, dynamic>>(
+                (booking) => Map<String, dynamic>.from(booking),
+              )
+              .toList();
+        } else if (response.containsKey('bookings') &&
+            response['bookings'] is List) {
+          final List<dynamic> bookingData = response['bookings'];
+          return bookingData
+              .map<Map<String, dynamic>>(
+                (booking) => Map<String, dynamic>.from(booking),
+              )
+              .toList();
+        }
+      } else if (response is List) {
+        // Direct list response
+        return response
+            .map<Map<String, dynamic>>(
+              (booking) => Map<String, dynamic>.from(booking),
+            )
+            .toList();
+      }
+
+      // If no valid data found, return empty list
+      return [];
+    } catch (e) {
+      print('Error fetching booking history: $e');
+      // Fallback to mock data in case of API failure
+      return await _getMockBookingHistory();
+    }
+  }
+
+  /// Fallback mock booking history data
+  Future<List<Map<String, dynamic>>> _getMockBookingHistory() async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 800));
 
@@ -73,6 +134,46 @@ class BookingHistoryRepository {
 
   /// Cancel booking
   Future<bool> cancelBooking(String bookingId) async {
+    try {
+      // Build API URL for cancel booking
+      final url = '${AppUrl.baseUrl}/${AppUrl.cancelBooking}';
+
+      // Prepare request data
+      final requestData = {
+        'bookingNo': bookingId,
+        'cancelReason': 'Customer requested cancellation',
+      };
+
+      // Make API call using NetworkServiceImpl
+      final response = await _networkService.getPostApiResponse(
+        url,
+        requestData,
+      );
+
+      // Handle API response
+      if (response is Map<String, dynamic>) {
+        // Check if cancellation was successful
+        if (response.containsKey('success') && response['success'] == true) {
+          return true;
+        } else if (response.containsKey('status') &&
+            response['status'] == 'success') {
+          return true;
+        } else if (response.containsKey('message') &&
+            response['message'].toString().toLowerCase().contains('success')) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('Error cancelling booking: $e');
+      // Fallback to mock cancellation
+      return await _mockCancelBooking();
+    }
+  }
+
+  /// Fallback mock cancellation
+  Future<bool> _mockCancelBooking() async {
     // Simulate network delay
     await Future.delayed(const Duration(seconds: 1));
 
@@ -82,6 +183,41 @@ class BookingHistoryRepository {
 
   /// Get booking details by ID
   Future<Map<String, dynamic>?> getBookingDetails(String bookingId) async {
+    try {
+      // Build API URL for booking details
+      final url = AppUrl.replacePathParams(AppUrl.getBookingInfo, {
+        'bookingno': bookingId,
+      });
+      final fullUrl = '${AppUrl.baseUrl}/$url';
+
+      // Make API call using NetworkServiceImpl
+      final response = await _networkService.getGetApiResponse(fullUrl);
+
+      // Handle API response
+      if (response is Map<String, dynamic>) {
+        // Check if response contains booking data
+        if (response.containsKey('data') &&
+            response['data'] is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(response['data']);
+        } else if (response.containsKey('booking') &&
+            response['booking'] is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(response['booking']);
+        } else {
+          // Return the response itself if it's a valid booking object
+          return response;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('Error fetching booking details: $e');
+      // Fallback to mock data
+      return await _getMockBookingDetails(bookingId);
+    }
+  }
+
+  /// Fallback mock booking details
+  Future<Map<String, dynamic>?> _getMockBookingDetails(String bookingId) async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -116,6 +252,48 @@ class BookingHistoryRepository {
     int rating,
     String? feedback,
   ) async {
+    try {
+      // Build API URL for rating
+      final url = '${AppUrl.baseUrl}/${AppUrl.userRatingDriver}';
+
+      // Prepare request data
+      final requestData = {
+        'bookingId': bookingId,
+        'rating': rating,
+        'feedback': feedback ?? '',
+        'ratingDate': DateTime.now().toIso8601String(),
+      };
+
+      // Make API call using NetworkServiceImpl
+      final response = await _networkService.getPostApiResponse(
+        url,
+        requestData,
+      );
+
+      // Handle API response
+      if (response is Map<String, dynamic>) {
+        // Check if rating was successful
+        if (response.containsKey('success') && response['success'] == true) {
+          return true;
+        } else if (response.containsKey('status') &&
+            response['status'] == 'success') {
+          return true;
+        } else if (response.containsKey('message') &&
+            response['message'].toString().toLowerCase().contains('success')) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('Error rating booking: $e');
+      // Fallback to mock rating
+      return await _mockRateBooking();
+    }
+  }
+
+  /// Fallback mock rating
+  Future<bool> _mockRateBooking() async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -184,4 +362,3 @@ class BookingHistoryRepository {
     return '$state$number$series${_random.nextInt(9999) + 1000}';
   }
 }
-

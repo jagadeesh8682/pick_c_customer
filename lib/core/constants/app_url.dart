@@ -28,7 +28,7 @@ class AppUrl {
 
   // Booking
   static const String bookingHistory =
-      'master/customer/bookingHistoryListbyCustomerMobileNo/{mobile}';
+      '/master/customer/bookingHistoryListbyCustomerMobileNo/{mobile}';
   static const String getBookingInfo = 'master/customer/booking/{bookingno}';
   static const String confirmBooking = 'master/customer/bookingSave';
   static const String cancelBooking = 'master/customer/cancelBooking';
