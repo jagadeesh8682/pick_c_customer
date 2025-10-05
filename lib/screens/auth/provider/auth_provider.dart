@@ -48,12 +48,15 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-     final response = await _apiService.login(credentials);
-response['Status'] == true ? _isLoggedIn = true : 
-      _isLoggedIn = false;
+      final response = await _apiService.login(credentials);
+      response['Status'] == true ? _isLoggedIn = true : _isLoggedIn = false;
 
       // // Save credentials
-      await CredentialManager.saveCredentials(mobileNumber, password, response['Token']);
+      await CredentialManager.saveCredentials(
+        mobileNumber,
+        password,
+        response['Token'],
+      );
 
       // // Load user details
       // _currentUser = await _apiService.getUserDetails(mobileNumber);
