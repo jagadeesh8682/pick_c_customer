@@ -22,7 +22,11 @@ class AppUrl {
   static const String getVehicleTypes = 'master/customer/vehicleGroupList';
   static const String getOpenClosed = 'master/customer/vehicleTypeList';
   static const String getCargoTypes = 'master/customer/cargoTypeList';
-  static const String getTrucksFromNearLocation = 'master/customer/user';
+  static const String getTrucksFromNearLocation =
+      'operation/driveractivity/user';
+  // New lookup APIs
+  static const String getVehicleTypeList = 'master/vehicletype/list';
+  static const String getVehicleGroupList = 'master/vehiclegroup/list';
   static const String selectedRateCard =
       'master/rateCard/{closedOpenId}/{truckId}';
 

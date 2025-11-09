@@ -319,6 +319,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final success = await authProvider.changePassword(
         _oldPasswordController.text,
         _newPasswordController.text,
+        _confirmPasswordController.text,
       );
 
       if (success && mounted) {

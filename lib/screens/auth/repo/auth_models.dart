@@ -101,134 +101,111 @@ class Customer {
 }
 
 class SignUpRequest {
-  final String mobileNo;
+  final String userName;
+  final String mobileNumber;
+  final String email;
   final String password;
-  final String name;
-  final String emailID;
-  final String deviceID;
-  final DateTime createdOn;
+  final String reEnterPwd;
 
   SignUpRequest({
-    required this.mobileNo,
+    required this.userName,
+    required this.mobileNumber,
+    required this.email,
     required this.password,
-    required this.name,
-    required this.emailID,
-    required this.deviceID,
-    required this.createdOn,
+    required this.reEnterPwd,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'MobileNo': mobileNo,
-      'Password': password,
-      'Name': name,
-      'EmailID': emailID,
-      'DeviceID': deviceID,
-      'CreatedOn': createdOn.toIso8601String(),
+      'userName': userName,
+      'mobileNumber': mobileNumber,
+      'email': email,
+      'password': password,
+      'reEnterPwd': reEnterPwd,
     };
   }
 
   factory SignUpRequest.fromJson(Map<String, dynamic> json) {
     return SignUpRequest(
-      mobileNo: json['MobileNo'] ?? json['mobileNo'] ?? '',
-      password: json['Password'] ?? json['password'] ?? '',
-      name: json['Name'] ?? json['name'] ?? '',
-      emailID: json['EmailID'] ?? json['emailID'] ?? json['email'] ?? '',
-      deviceID: json['DeviceID'] ?? json['deviceID'] ?? '',
-      createdOn:
-          DateTime.tryParse(json['CreatedOn'] ?? json['createdOn'] ?? '') ??
-          DateTime.now(),
-    );
-  }
-
-  SignUpRequest copyWith({
-    String? mobileNo,
-    String? password,
-    String? name,
-    String? emailID,
-    String? deviceID,
-    DateTime? createdOn,
-  }) {
-    return SignUpRequest(
-      mobileNo: mobileNo ?? this.mobileNo,
-      password: password ?? this.password,
-      name: name ?? this.name,
-      emailID: emailID ?? this.emailID,
-      deviceID: deviceID ?? this.deviceID,
-      createdOn: createdOn ?? this.createdOn,
+      userName: json['userName'] ?? json['UserName'] ?? '',
+      mobileNumber: json['mobileNumber'] ?? json['mobileNo'] ?? '',
+      email: json['email'] ?? json['EmailID'] ?? '',
+      password: json['password'] ?? json['Password'] ?? '',
+      reEnterPwd: json['reEnterPwd'] ?? json['reEnterPassword'] ?? '',
     );
   }
 }
 
 class ForgotPasswordRequest {
-  final String mobileNo;
-  final String newPassword;
-  final String otp;
+  final String mobileNumber;
+  final String password;
+  final String reEnterPwd;
 
   ForgotPasswordRequest({
-    required this.mobileNo,
-    required this.newPassword,
-    required this.otp,
+    required this.mobileNumber,
+    required this.password,
+    required this.reEnterPwd,
   });
 
   Map<String, dynamic> toJson() {
-    return {'mobileNo': mobileNo, 'newPassword': newPassword, 'otp': otp};
+    return {
+      'mobileNumber': mobileNumber,
+      'password': password,
+      'reEnterPwd': reEnterPwd,
+    };
   }
 
   factory ForgotPasswordRequest.fromJson(Map<String, dynamic> json) {
     return ForgotPasswordRequest(
-      mobileNo: json['mobileNo'] ?? '',
-      newPassword: json['newPassword'] ?? '',
-      otp: json['otp'] ?? '',
+      mobileNumber: json['mobileNumber'] ?? json['mobileNo'] ?? '',
+      password: json['password'] ?? json['newPassword'] ?? '',
+      reEnterPwd: json['reEnterPwd'] ?? json['reEnterPassword'] ?? '',
     );
   }
 }
 
 class ChangePasswordRequest {
-  final String currentPassword;
+  final String oldPassword;
   final String newPassword;
+  final String confirmPassword;
 
   ChangePasswordRequest({
-    required this.currentPassword,
+    required this.oldPassword,
     required this.newPassword,
+    required this.confirmPassword,
   });
 
   Map<String, dynamic> toJson() {
-    return {'currentPassword': currentPassword, 'newPassword': newPassword};
+    return {
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+    };
   }
 
   factory ChangePasswordRequest.fromJson(Map<String, dynamic> json) {
     return ChangePasswordRequest(
-      currentPassword: json['currentPassword'] ?? '',
+      oldPassword: json['oldPassword'] ?? json['currentPassword'] ?? '',
       newPassword: json['newPassword'] ?? '',
+      confirmPassword: json['confirmPassword'] ?? json['newPassword'] ?? '',
     );
   }
 }
 
 class Device {
   final String deviceId;
-  final String deviceType;
-  final String fcmToken;
+  final String mobileNo;
 
-  Device({
-    required this.deviceId,
-    required this.deviceType,
-    required this.fcmToken,
-  });
+  Device({required this.deviceId, required this.mobileNo});
 
   Map<String, dynamic> toJson() {
-    return {
-      'deviceId': deviceId,
-      'deviceType': deviceType,
-      'fcmToken': fcmToken,
-    };
+    return {'deviceId': deviceId, 'mobileNo': mobileNo};
   }
 
   factory Device.fromJson(Map<String, dynamic> json) {
     return Device(
       deviceId: json['deviceId'] ?? '',
-      deviceType: json['deviceType'] ?? '',
-      fcmToken: json['fcmToken'] ?? '',
+      mobileNo: json['mobileNo'] ?? json['mobileNumber'] ?? '',
     );
   }
 }

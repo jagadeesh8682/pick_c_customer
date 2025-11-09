@@ -5,11 +5,15 @@ class CredentialManager {
   static const String _passwordKey = 'password';
   static const String token = 'token';
 
-  static Future<void> saveCredentials(String mobile, String password, String token) async {
+  static Future<void> saveCredentials(
+    String mobile,
+    String password,
+    String tokenValue,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_mobileKey, mobile);
     await prefs.setString(_passwordKey, password);
-    await prefs.setString(token, 'your_token_here'); // Save token if needed
+    await prefs.setString(token, tokenValue); // Save actual token from API
   }
 
   static Future<String?> getMobileNumber() async {
@@ -21,6 +25,7 @@ class CredentialManager {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_passwordKey);
   }
+
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(token);
@@ -35,6 +40,8 @@ class CredentialManager {
 
   static Future<bool> hasCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_mobileKey) && prefs.containsKey(_passwordKey) && prefs.containsKey(token);
+    return prefs.containsKey(_mobileKey) &&
+        prefs.containsKey(_passwordKey) &&
+        prefs.containsKey(token);
   }
 }

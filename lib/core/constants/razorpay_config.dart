@@ -1,10 +1,17 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class RazorpayConfig {
   // Test Key - Replace with your actual Razorpay key
   static const String testKey = 'rzp_test_1DP5mmOlF5G5ag';
   static const String liveKey = 'rzp_live_YOUR_LIVE_KEY_HERE';
 
-  // Use test key for development, live key for production
-  static const String currentKey = testKey;
+  // Get Razorpay key from environment variables
+  static String get razorpayKeyId => dotenv.env['RAZORPAY_KEY_ID'] ?? testKey;
+  static String get razorpayKeySecret =>
+      dotenv.env['RAZORPAY_KEY_SECRET'] ?? '';
+
+  // Use environment key if available, otherwise fallback to test key
+  static String get currentKey => razorpayKeyId;
 
   // Payment options
   static Map<String, dynamic> getPaymentOptions({

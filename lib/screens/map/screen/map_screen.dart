@@ -16,6 +16,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final TextEditingController _pickupController = TextEditingController();
   final TextEditingController _dropController = TextEditingController();
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -23,6 +24,15 @@ class _MapScreenState extends State<MapScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MapProvider>().initialize();
       _debugApiKeys();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh active trip status when screen becomes visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MapProvider>().refreshActiveTrip();
     });
   }
 
@@ -43,6 +53,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _mapController?.dispose();
     _pickupController.dispose();
     _dropController.dispose();
     super.dispose();
@@ -72,36 +83,47 @@ class _MapScreenState extends State<MapScreen> {
         builder: (context, mapProvider, child) {
           _updateControllers(mapProvider);
 
-          // Check if API keys are loaded
-          if (!ApiKeys.areApiKeysLoaded) {
+          // Check if API keys are loaded and not placeholders
+          final mapsKey = ApiKeys.googleMapsApiKey;
+          final isPlaceholder =
+              mapsKey.isEmpty ||
+              mapsKey.contains('your_') ||
+              mapsKey.contains('YOUR_') ||
+              mapsKey == 'your_google_maps_api_key_here';
+
+          if (!ApiKeys.areApiKeysLoaded || isPlaceholder) {
             return _buildApiKeyError();
           }
 
           // Show loading state while initializing
-          if (mapProvider.isLoadingLocation) {
+          if (mapProvider.isLoadingLocation ||
+              mapProvider.isLoadingNearbyDrivers) {
             return _buildLoadingState();
           }
 
-          return Stack(
-            children: [
-              // Google Map
-              _buildGoogleMap(mapProvider),
+          return SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Google Map - Full screen background
+                _buildGoogleMap(mapProvider),
 
-              // App Bar
-              _buildAppBar(),
+                // App Bar
+                _buildAppBar(),
 
-              // Location Input Fields
-              _buildLocationFields(mapProvider),
+                // Location Input Fields
+                _buildLocationFields(mapProvider),
 
-              // Truck Type Selector
-              _buildTruckTypeSelector(mapProvider),
+                // Truck Type Selector
+                _buildTruckTypeSelector(mapProvider),
 
-              // Bottom Action Buttons
-              _buildBottomButtons(mapProvider),
+                // Bottom Action Buttons
+                _buildBottomButtons(mapProvider),
 
-              // Floating Action Button for current location
-              _buildCurrentLocationButton(mapProvider),
-            ],
+                // Floating Action Button for current location
+                _buildCurrentLocationButton(mapProvider),
+              ],
+            ),
           );
         },
       ),
@@ -134,8 +156,14 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Build API key error widget
   Widget _buildApiKeyError() {
+    final mapsKey = ApiKeys.googleMapsApiKey;
+    final isPlaceholder =
+        mapsKey.contains('your_') ||
+        mapsKey.contains('YOUR_') ||
+        mapsKey.isEmpty;
+
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -143,7 +171,7 @@ class _MapScreenState extends State<MapScreen> {
             Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
             const SizedBox(height: 16),
             Text(
-              'API Key Configuration Required',
+              '🚨 API Authorization Required',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -151,22 +179,75 @@ class _MapScreenState extends State<MapScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Please ensure your .env file contains:\n'
-              'GOOGLE_MAPS_API_KEY=your_api_key_here\n'
-              'GOOGLE_PLACES_API_KEY=your_api_key_here',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '❌ Error: "API project is not authorized to use this API"',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[900],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Your API key exists but Google Cloud project is not authorized.\n\n'
+                    '🔧 FIX STEPS:\n\n'
+                    '1️⃣ Go to: https://console.cloud.google.com/apis/library\n'
+                    '   → Search "Maps SDK for Android"\n'
+                    '   → Click "ENABLE"\n\n'
+                    '2️⃣ Go to: https://console.cloud.google.com/billing\n'
+                    '   → Link a billing account (Free tier: \$200/month credit)\n\n'
+                    '3️⃣ Wait 5-10 minutes for changes to propagate\n\n'
+                    '4️⃣ Restart this app',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
-                // Restart the app to reload environment variables
-                Navigator.of(context).pushReplacementNamed('/');
+                _debugApiKeys();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('📋 Check console for API key details'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
               },
-              child: const Text('Retry'),
+              icon: const Icon(Icons.info),
+              label: const Text('Show API Key Info'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
+            if (isPlaceholder)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '⚠️ Current API Key: ${mapsKey.isEmpty ? "Not set" : mapsKey.substring(0, mapsKey.length > 30 ? 30 : mapsKey.length) + "..."}\n'
+                  'This appears to be a placeholder. Please update .env file.',
+                  style: TextStyle(fontSize: 12, color: Colors.red[700]),
+                  textAlign: TextAlign.center,
+                ),
+              ),
           ],
         ),
       ),
@@ -175,93 +256,331 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Build Google Map widget
   Widget _buildGoogleMap(MapProvider mapProvider) {
-    print('Building Google Map with location: ${mapProvider.currentLocation}');
+    print(
+      '🗺️ Building Google Map with location: ${mapProvider.currentLocation}',
+    );
+    final apiKey = ApiKeys.googleMapsApiKey;
+    print(
+      '🔑 Google Maps API Key: ${apiKey.isNotEmpty ? "Present (${apiKey.substring(0, apiKey.length > 10 ? 10 : apiKey.length)}...)" : "Missing"}',
+    );
 
-    return GoogleMap(
-      onMapCreated: (GoogleMapController controller) {
-        print('Google Map created successfully');
-        // Map controller can be used for future map operations
-      },
-      initialCameraPosition: CameraPosition(
-        target: mapProvider.currentLocation ?? const LatLng(17.3850, 78.4867),
-        zoom: 15.0,
+    // Default location (Hyderabad) if current location is null
+    final defaultLocation = const LatLng(17.3850, 78.4867);
+    final targetLocation = mapProvider.currentLocation ?? defaultLocation;
+
+    print('📍 Map target location: $targetLocation');
+
+    // Check if API key is valid (not empty and not placeholder)
+    if (apiKey.isEmpty ||
+        apiKey.contains('your_') ||
+        apiKey.contains('YOUR_') ||
+        apiKey == 'your_google_maps_api_key_here') {
+      print('❌ Invalid API key - map will not render');
+      return Container(
+        color: Colors.grey[300],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                'Invalid Google Maps API Key',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please check your .env file',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox.expand(
+      child: Container(
+        color: Colors.grey[200], // Background color while map loads
+        child: Stack(
+          children: [
+            // The actual Google Map
+            GoogleMap(
+              key: ValueKey(
+                'google_map_${targetLocation.latitude}_${targetLocation.longitude}',
+              ),
+              onMapCreated: (GoogleMapController controller) async {
+                _mapController = controller;
+                print('✅ Google Map created successfully!');
+                print('📍 Map center: $targetLocation');
+                print('🎛️ Map controller ready');
+                print('🗺️ Map widget is rendering');
+
+                // Wait a bit for map to initialize
+                await Future.delayed(const Duration(milliseconds: 1000));
+
+                // Move camera to target location
+                if (_mapController != null) {
+                  try {
+                    final location =
+                        mapProvider.currentLocation ?? defaultLocation;
+                    await _mapController!.animateCamera(
+                      CameraUpdate.newLatLngZoom(location, 15.0),
+                    );
+                    print('📍 Camera animated to: $location');
+
+                    // Force a map update
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    _mapController!.getVisibleRegion();
+                    print('🗺️ Map region updated');
+                  } catch (e) {
+                    print('❌ Error animating camera: $e');
+                  }
+                }
+
+                // Diagnostic check after delay
+                Future.delayed(const Duration(seconds: 5), () {
+                  print('🔍 Diagnostic Check:');
+                  print(
+                    '   - Map controller: ${_mapController != null ? "✅ Present" : "❌ Missing"}',
+                  );
+                  print(
+                    '   - Current location: ${mapProvider.currentLocation}',
+                  );
+                  print(
+                    '   - API Key loaded: ${apiKey.isNotEmpty ? "✅ Yes" : "❌ No"}',
+                  );
+                  print('   - If map is blank, check:');
+                  print(
+                    '     1. Test on physical device (emulator may have issues)',
+                  );
+                  print(
+                    '     2. Verify API key restrictions in Google Cloud Console',
+                  );
+                  print('     3. Check internet connection');
+                  print('     4. Ensure Maps SDK for Android is enabled');
+                });
+              },
+              initialCameraPosition: CameraPosition(
+                target: targetLocation,
+                zoom: 15.0,
+              ),
+              markers: _buildMarkers(mapProvider),
+              onTap: (LatLng position) {
+                print('🗺️ Map tapped at: $position');
+                // Handle map tap to set pickup or drop location
+                _handleMapTap(mapProvider, position);
+              },
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: true, // Enable to help with debugging
+              mapToolbarEnabled: false,
+              mapType: MapType.normal,
+              compassEnabled: true,
+              rotateGesturesEnabled: true,
+              scrollGesturesEnabled: true,
+              tiltGesturesEnabled: true,
+              zoomGesturesEnabled: true,
+              trafficEnabled: false,
+              buildingsEnabled: true,
+              liteModeEnabled: false, // Ensure full map mode, not lite mode
+              // Try satellite view as fallback if normal doesn't work
+              // mapStyleId: null, // Will use default style
+              onCameraMove: (CameraPosition position) {
+                // Only log occasionally to avoid spam
+                // print('📷 Camera moved to: ${position.target}');
+              },
+              onCameraIdle: () {
+                print('📷 Camera idle');
+              },
+            ),
+            // Debug indicator (remove in production)
+            if (apiKey.contains('your_') || apiKey.isEmpty)
+              Container(
+                color: Colors.red.withOpacity(0.5),
+                child: const Center(
+                  child: Text(
+                    'Map not rendering - Check API Key',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-      markers: _buildMarkers(mapProvider),
-      onTap: (LatLng position) {
-        // Handle map tap to set pickup or drop location
-        _handleMapTap(mapProvider, position);
-      },
-      myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      mapToolbarEnabled: false,
-      mapType: MapType.normal,
-      onCameraMove: (CameraPosition position) {
-        print('Camera moved to: ${position.target}');
-      },
     );
   }
 
-  /// Build markers for pickup, drop, and current location
+  /// Build markers for pickup, drop, current location, active trip, and nearby drivers
   Set<Marker> _buildMarkers(MapProvider mapProvider) {
     Set<Marker> markers = {};
 
-    // Current location marker (blue)
-    if (mapProvider.currentLocation != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('current_location'),
-          position: mapProvider.currentLocation!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: const InfoWindow(title: 'Current Location'),
-        ),
-      );
+    // Show nearby drivers on map (like Uber/Rapido)
+    if (!mapProvider.hasActiveTrip) {
+      // Only show nearby drivers if there's no active trip
+      for (int i = 0; i < mapProvider.nearbyDrivers.length; i++) {
+        final driver = mapProvider.nearbyDrivers[i];
+        if (driver.latitude != 0 && driver.longitude != 0) {
+          markers.add(
+            Marker(
+              markerId: MarkerId('nearby_driver_${driver.id}_$i'),
+              position: LatLng(driver.latitude, driver.longitude),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor
+                    .hueViolet, // Purple/violet color for nearby drivers
+              ),
+              infoWindow: InfoWindow(
+                title:
+                    '🚚 ${driver.driverName.isNotEmpty ? driver.driverName : "Driver"}',
+                snippet: driver.vehicleNumber.isNotEmpty
+                    ? '${driver.vehicleNumber}\n${driver.vehicleType}\n${driver.distance.toStringAsFixed(1)} km away'
+                    : '${driver.vehicleType}\n${driver.distance.toStringAsFixed(1)} km away',
+              ),
+              anchor: const Offset(0.5, 0.5),
+            ),
+          );
+        }
+      }
     }
 
-    // Pickup location marker (green, draggable)
-    if (mapProvider.pickupLocation != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('pickup_location'),
-          position: mapProvider.pickupLocation!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen,
+    // If there's an active trip, show active trip markers
+    if (mapProvider.hasActiveTrip) {
+      // Active trip pickup location marker (green)
+      if (mapProvider.activePickupLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('active_pickup_location'),
+            position: mapProvider.activePickupLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen,
+            ),
+            infoWindow: InfoWindow(
+              title: 'Pickup Location',
+              snippet: mapProvider.activePickupAddress.isNotEmpty
+                  ? mapProvider.activePickupAddress
+                  : 'Active Trip Pickup',
+            ),
           ),
-          infoWindow: InfoWindow(
-            title: 'Pickup Location',
-            snippet: mapProvider.pickupAddress.isNotEmpty
-                ? mapProvider.pickupAddress
-                : 'Tap to edit',
-          ),
-          draggable: true,
-          onDragEnd: (LatLng newPosition) {
-            mapProvider.onMarkerDrag('pickup', newPosition);
-            _showLocationSelectedSnackBar('Pickup location updated');
-          },
-        ),
-      );
-    }
+        );
+      }
 
-    // Drop location marker (red, draggable)
-    if (mapProvider.dropLocation != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('drop_location'),
-          position: mapProvider.dropLocation!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(
-            title: 'Drop Location',
-            snippet: mapProvider.dropAddress.isNotEmpty
-                ? mapProvider.dropAddress
-                : 'Tap to edit',
+      // Active trip drop location marker (red)
+      if (mapProvider.activeDropLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('active_drop_location'),
+            position: mapProvider.activeDropLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueRed,
+            ),
+            infoWindow: InfoWindow(
+              title: 'Drop Location',
+              snippet: mapProvider.activeDropAddress.isNotEmpty
+                  ? mapProvider.activeDropAddress
+                  : 'Active Trip Drop',
+            ),
           ),
-          draggable: true,
-          onDragEnd: (LatLng newPosition) {
-            mapProvider.onMarkerDrag('drop', newPosition);
-            _showLocationSelectedSnackBar('Drop location updated');
-          },
-        ),
-      );
+        );
+      }
+
+      // Driver/Truck location marker (orange/yellow - truck icon)
+      if (mapProvider.driverLocation != null) {
+        final driverName = mapProvider.activeDriver?.name ?? 'Driver';
+        final vehicleNumber = mapProvider.activeDriver?.vehicleNumber ?? '';
+        markers.add(
+          Marker(
+            markerId: const MarkerId('driver_location'),
+            position: mapProvider.driverLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueOrange,
+            ),
+            infoWindow: InfoWindow(
+              title: '🚚 $driverName',
+              snippet: vehicleNumber.isNotEmpty
+                  ? 'Vehicle: $vehicleNumber\nTap to view details'
+                  : 'Active Trip Driver',
+            ),
+            anchor: const Offset(0.5, 0.5),
+          ),
+        );
+      }
+
+      // Current location marker (blue) - still show during active trip
+      if (mapProvider.currentLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('current_location'),
+            position: mapProvider.currentLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueBlue,
+            ),
+            infoWindow: const InfoWindow(title: 'Your Location'),
+          ),
+        );
+      }
+    } else {
+      // No active trip - show normal booking markers
+      // Current location marker (blue)
+      if (mapProvider.currentLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('current_location'),
+            position: mapProvider.currentLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueBlue,
+            ),
+            infoWindow: const InfoWindow(title: 'Current Location'),
+          ),
+        );
+      }
+
+      // Pickup location marker (green, draggable)
+      if (mapProvider.pickupLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('pickup_location'),
+            position: mapProvider.pickupLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen,
+            ),
+            infoWindow: InfoWindow(
+              title: 'Pickup Location',
+              snippet: mapProvider.pickupAddress.isNotEmpty
+                  ? mapProvider.pickupAddress
+                  : 'Tap to edit',
+            ),
+            draggable: true,
+            onDragEnd: (LatLng newPosition) {
+              mapProvider.onMarkerDrag('pickup', newPosition);
+              _showLocationSelectedSnackBar('Pickup location updated');
+            },
+          ),
+        );
+      }
+
+      // Drop location marker (red, draggable)
+      if (mapProvider.dropLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('drop_location'),
+            position: mapProvider.dropLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueRed,
+            ),
+            infoWindow: InfoWindow(
+              title: 'Drop Location',
+              snippet: mapProvider.dropAddress.isNotEmpty
+                  ? mapProvider.dropAddress
+                  : 'Tap to edit',
+            ),
+            draggable: true,
+            onDragEnd: (LatLng newPosition) {
+              mapProvider.onMarkerDrag('drop', newPosition);
+              _showLocationSelectedSnackBar('Drop location updated');
+            },
+          ),
+        );
+      }
     }
 
     return markers;
@@ -533,7 +852,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// Build Truck Type Selector
+  /// Build Truck Type Selector with Vehicle Types and Groups from API
   Widget _buildTruckTypeSelector(MapProvider mapProvider) {
     return Positioned(
       bottom: 120,
@@ -546,8 +865,62 @@ class _MapScreenState extends State<MapScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Loading/Unloading Icon
+            // Vehicle Type Selector (Open/Closed)
+            if (mapProvider.vehicleTypes.isNotEmpty) ...[
+              Row(
+                children: [
+                  const Text(
+                    'Vehicle Type:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ...mapProvider.vehicleTypes.map((vehicleType) {
+                    final isSelected =
+                        mapProvider.selectedVehicleType?.lookupId ==
+                        vehicleType.lookupId;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => mapProvider.selectVehicleType(vehicleType),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.yellow : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected ? Colors.black : Colors.grey,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            vehicleType.lookupCode,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Vehicle Group Selector (Mini/Small/Medium/Large)
             Row(
               children: [
                 Container(
@@ -589,27 +962,46 @@ class _MapScreenState extends State<MapScreen> {
                 Container(width: 1, height: 40, color: Colors.grey[400]),
                 const SizedBox(width: 16),
 
-                // Truck Type Options
+                // Vehicle Group Options (from API)
                 Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: ['Mini', 'Small', 'Medium', 'Large'].map((
-                      truckType,
-                    ) {
-                      final isSelected =
-                          mapProvider.selectedTruckType == truckType;
-                      final availability =
-                          mapProvider.truckAvailability[truckType] ??
-                          'No trucks';
+                  child: mapProvider.vehicleGroups.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Loading vehicle groups...',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: mapProvider.vehicleGroups.map((
+                              vehicleGroup,
+                            ) {
+                              final isSelected =
+                                  mapProvider.selectedVehicleGroup?.lookupId ==
+                                  vehicleGroup.lookupId;
+                              final availability =
+                                  mapProvider.truckAvailability[vehicleGroup
+                                      .lookupCode] ??
+                                  'Check';
 
-                      return _buildTruckTypeOption(
-                        truckType: truckType,
-                        isSelected: isSelected,
-                        availability: availability,
-                        onTap: () => mapProvider.selectTruckType(truckType),
-                      );
-                    }).toList(),
-                  ),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
+                                child: _buildTruckTypeOption(
+                                  truckType: vehicleGroup.lookupCode,
+                                  isSelected: isSelected,
+                                  availability: availability,
+                                  onTap: () => mapProvider.selectVehicleGroup(
+                                    vehicleGroup,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -629,6 +1021,7 @@ class _MapScreenState extends State<MapScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 50,
@@ -648,14 +1041,29 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
           const SizedBox(height: 4),
+          // Show vehicle group name
           Text(
-            availability,
-            style: const TextStyle(
-              fontSize: 10,
+            truckType,
+            style: TextStyle(
+              fontSize: 11,
               color: Colors.black,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          // Show availability below the name (if not empty and not "Check")
+          if (availability.isNotEmpty &&
+              availability != 'Check' &&
+              availability != 'Loading vehicle groups...')
+            Text(
+              availability,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ),
     );

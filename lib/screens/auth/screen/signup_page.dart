@@ -5,7 +5,6 @@ import '../repo/auth_models.dart';
 import 'custom_widgets.dart';
 import '../../../core/utils/navigation_service.dart';
 import '../../../core/utils/custom_snackbar.dart';
-import '../../../core/utils/device_utils.dart';
 import '../../../core/theme/app_colors.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -232,18 +231,14 @@ class _SignUpPageState extends State<SignUpPage> {
       );
 
       try {
-        // Get device ID
-        final deviceId = await DeviceUtils.getDeviceId();
-
         final signUpRequest = SignUpRequest(
-          mobileNo: cleanMobileNumber,
-          password: _passwordController.text,
-          name: _nameController.text.trim(),
-          emailID: _emailController.text.trim().isEmpty
-              ? ''
+          userName: _nameController.text.trim(),
+          mobileNumber: cleanMobileNumber,
+          email: _emailController.text.trim().isEmpty
+              ? '${cleanMobileNumber}@pickcargo.in'
               : _emailController.text.trim(),
-          deviceID: deviceId,
-          createdOn: DateTime.now(),
+          password: _passwordController.text,
+          reEnterPwd: _confirmPasswordController.text,
         );
 
         final success = await authProvider.signUp(signUpRequest);

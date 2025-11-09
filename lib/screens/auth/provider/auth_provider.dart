@@ -48,22 +48,56 @@ class AuthProvider with ChangeNotifier {
       );
 
       final response = await _apiService.login(credentials);
-      response['Status'] == true ? _isLoggedIn = true : _isLoggedIn = false;
 
-      // // Save credentials
-      await CredentialManager.saveCredentials(
-        mobileNumber,
-        password,
-        response['Token'],
+      // API returns Token object - extract token and status
+      final status = response['Status'] ?? false;
+      final token = response['Token']?.toString() ?? '';
+
+      debugPrint(
+        'Login response - Status: $status, Token: ${token.isNotEmpty ? "Present" : "Missing"}',
       );
 
-      // // Load user details
-      // _currentUser = await _apiService.getUserDetails(mobileNumber);
+      // Check if login was successful (token must be present)
+      if (status == true && token.isNotEmpty) {
+        _isLoggedIn = true;
 
-      notifyListeners();
-      return true;
+        // Save credentials with the actual token from API
+        await CredentialManager.saveCredentials(mobileNumber, password, token);
+
+        debugPrint('Credentials saved successfully');
+
+        // Load user details after successful login
+        try {
+          _currentUser = await _apiService.getUserDetails(mobileNumber);
+          debugPrint('User details loaded: ${_currentUser?.name}');
+        } catch (e) {
+          debugPrint('Failed to load user details: $e');
+          // Continue even if user details fail to load
+          // User is still logged in
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        // Login failed - extract error message
+        final message =
+            response['Message'] ??
+            response['message'] ??
+            (token.isEmpty
+                ? 'Invalid credentials or token not received'
+                : 'Login failed');
+        _setError(message);
+        _isLoggedIn = false;
+        notifyListeners();
+        debugPrint('Login failed: $message');
+        return false;
+      }
     } catch (e) {
-      _setError('Login failed: $e');
+      debugPrint('Login error: $e');
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError('Login failed: $errorMessage');
+      _isLoggedIn = false;
+      notifyListeners();
       return false;
     } finally {
       _setLoading(false);
@@ -129,11 +163,8 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // For now, just return true since OTPs are not being used
-      // Replace this with actual OTP verification when needed
-      debugPrint('OTP verification called for $mobileNumber with OTP: $otp');
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-      return true;
+      final success = await _apiService.verifyOTP(mobileNumber, otp);
+      return success;
     } catch (e) {
       _setError('OTP verification failed: $e');
       return false;
@@ -179,16 +210,16 @@ class AuthProvider with ChangeNotifier {
   Future<bool> resetPassword(
     String mobileNumber,
     String newPassword,
-    String otp,
+    String confirmPassword,
   ) async {
     _setLoading(true);
     _clearError();
 
     try {
       final request = ForgotPasswordRequest(
-        mobileNo: mobileNumber,
-        newPassword: newPassword,
-        otp: otp,
+        mobileNumber: mobileNumber,
+        password: newPassword,
+        reEnterPwd: confirmPassword,
       );
 
       final success = await _apiService.forgotPassword(request);
@@ -202,8 +233,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<bool> changePassword(
-    String currentPassword,
+    String oldPassword,
     String newPassword,
+    String confirmPassword,
   ) async {
     _setLoading(true);
     _clearError();
@@ -215,8 +247,9 @@ class AuthProvider with ChangeNotifier {
       }
 
       final request = ChangePasswordRequest(
-        currentPassword: currentPassword,
+        oldPassword: oldPassword,
         newPassword: newPassword,
+        confirmPassword: confirmPassword,
       );
       final isValid = await _apiService.changePassword(
         _currentUser!.mobileNo,
@@ -224,7 +257,7 @@ class AuthProvider with ChangeNotifier {
       );
       return isValid;
     } catch (e) {
-      _setError('Password validation failed: $e');
+      _setError('Password change failed: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -256,13 +289,9 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
 
-      final request = ChangePasswordRequest(
-        currentPassword: password,
-        newPassword: password, // For validation, we use the same password
-      );
-      final isValid = await _apiService.changePassword(
+      final isValid = await _apiService.validatePassword(
         _currentUser!.mobileNo,
-        request,
+        password,
       );
       return isValid;
     } catch (e) {
